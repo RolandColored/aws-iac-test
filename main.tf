@@ -3,6 +3,8 @@ provider "aws" {
   region = var.aws_region
 }
 
+
+// bucket
 resource "random_pet" "lambda_bucket_name" {
   prefix = "learn-terraform-functions"
   length = 4
@@ -25,6 +27,9 @@ resource "aws_s3_bucket_acl" "lambda_bucket" {
   bucket = aws_s3_bucket.lambda_bucket.id
   acl    = "private"
 }
+
+
+// lambda
 data "archive_file" "lambda_server" {
   type = "zip"
 
@@ -40,3 +45,36 @@ resource "aws_s3_object" "lambda_server" {
 
   etag = filemd5(data.archive_file.lambda_server.output_path)
 }
+
+resource "aws_lambda_function" "server" {
+  function_name = "Server"
+
+  s3_bucket = aws_s3_bucket.lambda_bucket.id
+  s3_key    = aws_s3_object.lambda_server.key
+
+  runtime = "nodejs20.x"
+  handler = "hello.handler"
+
+  source_code_hash = data.archive_file.lambda_server.output_base64sha256
+
+  role = aws_iam_role.lambda_exec.arn
+}
+
+resource "aws_iam_role" "lambda_exec" {
+  name = "serverless_lambda"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action = "sts:AssumeRole"
+      Effect = "Allow"
+      Sid    = ""
+      Principal = {
+        Service = "lambda.amazonaws.com"
+      }
+      }
+    ]
+  })
+}
+
+
