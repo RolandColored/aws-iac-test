@@ -6,7 +6,6 @@ provider "aws" {
 
 // bucket
 resource "random_pet" "lambda_bucket_name" {
-  prefix = "learn-terraform-functions"
   length = 4
 }
 
@@ -26,6 +25,36 @@ resource "aws_s3_bucket_acl" "lambda_bucket" {
 
   bucket = aws_s3_bucket.lambda_bucket.id
   acl    = "private"
+}
+
+// route53
+resource "aws_route53_zone" "primary_domain" {
+  name = "example.com"
+}
+
+resource "aws_route53_record" "www" {
+  zone_id = aws_route53_zone.primary_domain.zone_id
+  name    = "tenant.example.com"
+  type    = "A"
+  alias {
+    name                   = aws_apigatewayv2_domain_name.teant_domain.domain_name_configuration[0].target_domain_name
+    zone_id                = aws_apigatewayv2_domain_name.teant_domain.domain_name_configuration[0].hosted_zone_id
+    evaluate_target_health = false
+  }
+}
+
+resource "aws_acm_certificate" "cert" {
+  domain_name       = "tenant.example.com"
+  validation_method = "DNS"
+}
+
+resource "aws_apigatewayv2_domain_name" "teant_domain" {
+  domain_name = "tenant.example.com"
+  domain_name_configuration {
+    certificate_arn = aws_acm_certificate.cert.arn
+    endpoint_type   = "REGIONAL"
+    security_policy = "TLS_1_2"
+  }
 }
 
 
@@ -114,4 +143,21 @@ resource "aws_lambda_permission" "api_gw" {
   source_arn = "${aws_apigatewayv2_api.lambda.execution_arn}/*/*"
 }
 
+// database
+resource "aws_db_instance" "database" {
+  allocated_storage           = 10
+  db_name                     = "tenantdatabase"
+  engine                      = "mysql"
+  engine_version              = "5.7"
+  instance_class              = "db.t3.micro"
+  username                    = "databaseowner"
+  manage_master_user_password = true
+  parameter_group_name        = "default.mysql5.7"
+  skip_final_snapshot         = true
+}
 
+/*
+resource "aws_db_proxy" "db_proxy" {
+  ...
+}
+*/

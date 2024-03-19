@@ -4,10 +4,13 @@ An implementation for a small exercise on Terraform and AWS.
 ## Infrastructure architecture
 ![Infrastructure architecture](multi-tenant_server_infrastructure.png)
 
-## ToDos
-- In which network(s) do the resources reside?
-- Code
-- Benefits/Risks table
+## Multi-tenancy resource decision
+AWS resource type | Benefits | Risks
+---|---|---
+route 53 | cost reduction and most likely not feasible to have multiple instances for a single domain | single point of failure
+api gateway | cost reduction, all configuration in one place | single point of failure
+lambda | independent runtime/deployments, easier for the software architecture, just one database connection eliminates risks of leaking foreign data | increased costs and monitoring efforts
+database | best separation of tenant data, independent of noisy neigbours | increased costs and monitoring efforts
 
 ## Questions on requirements
 - What kind of application will be hosted? Web App, mobile App backend, somehing completely different?

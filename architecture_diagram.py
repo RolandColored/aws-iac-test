@@ -1,19 +1,27 @@
 from diagrams import Cluster, Diagram, Edge
 from diagrams.aws.compute import Lambda
-from diagrams.aws.database import Aurora
-from diagrams.aws.network import APIGateway
-from diagrams.aws.network import Route53
+from diagrams.aws.database import RDSMysqlInstance
+from diagrams.aws.network import APIGateway, VpnGateway, Route53
+from diagrams.aws.general import User, Users
 
 tenants = ["Bessie", "Clarabelle", "Penelope"]
 
 with Diagram("Multi-tenant server infrastructure", show=False):
     dns = Route53("dns")
     api = APIGateway("api")
-    dns >> Edge(label="*.example.com") >> api
+    users = Users("end users")
+    admins = Users("db admins")
+
+    users >> dns >> Edge(label="*.example.com") >> api
 
     for tenant in tenants:
         with Cluster(tenant):
-            tenant_server = Lambda("server")
-            tenant_database = Aurora("database")
-            api >> Edge(label=f"{tenant.lower()}.example.com") >> tenant_server >> tenant_database
+            server = Lambda("server")
+            with Cluster("VPC"):
+                database = RDSMysqlInstance("database instance")
+                proxy = VpnGateway("db proxy")  # there is no proxy icon, so we abuse this one
+                proxy >> database
+
+            api >> Edge(label=f"{tenant.lower()}.example.com") >> server >> proxy
+            admins >> proxy
 
