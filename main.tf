@@ -29,35 +29,9 @@ resource "aws_s3_bucket_acl" "lambda_bucket" {
 
 // route53
 /*
-FIXME not working because we do not own the example.com domain
-
-resource "aws_route53_zone" "primary_domain" {
-  name = "example.com"
-}
-
-resource "aws_route53_record" "www" {
-  zone_id = aws_route53_zone.primary_domain.zone_id
-  name    = "tenant.example.com"
-  type    = "A"
-  alias {
-    name                   = aws_apigatewayv2_domain_name.teant_domain.domain_name_configuration[0].target_domain_name
-    zone_id                = aws_apigatewayv2_domain_name.teant_domain.domain_name_configuration[0].hosted_zone_id
-    evaluate_target_health = false
-  }
-}
-
-resource "aws_acm_certificate" "cert" {
-  domain_name       = "tenant.example.com"
-  validation_method = "DNS"
-}
-
-resource "aws_apigatewayv2_domain_name" "teant_domain" {
-  domain_name = "tenant.example.com"
-  domain_name_configuration {
-    certificate_arn = aws_acm_certificate.cert.arn
-    endpoint_type   = "REGIONAL"
-    security_policy = "TLS_1_2"
-  }
+data "aws_route53_zone" "root_domain" {
+  name         = "${var.root_domain}"
+  private_zone = false
 }
 */
 
@@ -100,4 +74,5 @@ module "tenant" {
   source_code_hash      = aws_s3_object.lambda_server.etag
   apigateway_id         = aws_apigatewayv2_api.gateway.id
   apigateway_source_arn = aws_apigatewayv2_api.gateway.execution_arn
+  root_domain           = var.root_domain
 }

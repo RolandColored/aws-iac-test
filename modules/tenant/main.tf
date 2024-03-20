@@ -46,6 +46,31 @@ resource "aws_apigatewayv2_route" "server" {
   target    = "integrations/${aws_apigatewayv2_integration.server.id}"
 }
 
+/*
+resource "aws_api_gateway_domain_name" "subdomain" {
+  domain_name = "${var.tenant_name}.${var.root_domain}"
+  certificate_arn = "${aws_acm_certificate.cert.arn}" // TODO certiciate implementation
+}
+
+resource "aws_api_gateway_base_path_mapping" "avxapi_base_path_mapping" {
+  api_id      = var.apigateway_id
+  stage_name  = var.apigateway_stage_name
+  domain_name = aws_api_gateway_domain_name.subdomain.domain_name
+}
+
+resource "aws_route53_record" "sub_domain" {
+  name    = "${var.tenant_name}.${var.root_domain}"
+  type    = "A"
+  zone_id = "${var.dns_zone_id}"
+
+  alias {
+    name                   = "${aws_api_gateway_domain_name.subdomain.cloudfront_domain_name}"
+    zone_id                = "${aws_api_gateway_domain_name.subdomain.cloudfront_zone_id}"
+    evaluate_target_health = false
+  }
+}
+*/
+
 resource "aws_lambda_permission" "api_gw" {
   statement_id  = "AllowExecutionFromAPIGateway"
   action        = "lambda:InvokeFunction"

@@ -4,6 +4,13 @@ An implementation for a small exercise on Terraform and AWS.
 ## Infrastructure architecture
 ![Infrastructure architecture](multi-tenant_server_infrastructure.png)
 
+## Implementation to dos
+Due to time constraints there is some work left for a working solution.
+
+- Database proxy resources, ideally with inbound network limitation to the lambda function and a VPN office IP for the database admins if possible. Maybe the different approach with a Lambda VPC integration would be more secure because the is the possiblity to have more fine-grained route control. But there are more "strings to connect" as downside.
+- Route53 configuration with a subdomain per tenant and it's API gateway integration. Due to a lack of willingness to spend money on a real domain, this could not be tested.
+
+
 ## Multi-tenancy resource decision
 AWS resource type | Benefits | Risks
 ---|---|---

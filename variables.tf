@@ -12,3 +12,10 @@ variable "tenants" {
   type = list(string)
   default = ["bessie", "clarabelle", "penelope"]
 }
+
+variable "root_domain" {
+  description = "Root domain for the tenant subdomains."
+
+  type    = string
+  default = "example.com"
+}

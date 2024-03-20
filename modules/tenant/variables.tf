@@ -29,3 +29,8 @@ variable "apigateway_source_arn" {
   type    = string
 }
 
+variable "root_domain" {
+  description = "Root domain for the tenant subdomains."
+  type    = string
+}
+
