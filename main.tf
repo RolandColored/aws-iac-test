@@ -59,14 +59,14 @@ resource "aws_apigatewayv2_api" "gateway" {
 }
 
 resource "aws_apigatewayv2_stage" "gateway_stage" {
-  api_id = aws_apigatewayv2_api.gateway.id
+  api_id      = aws_apigatewayv2_api.gateway.id
   name        = "multitenant_gateway_stage"
   auto_deploy = true
 }
 
 module "tenant" {
   for_each = toset(var.tenants)
-  source = "./modules/tenant"
+  source   = "./modules/tenant"
 
   tenant_name           = each.key
   bucket_id             = aws_s3_bucket.lambda_bucket.id

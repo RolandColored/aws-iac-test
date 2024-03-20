@@ -9,7 +9,7 @@ variable "aws_region" {
 variable "tenants" {
   description = "List of tenants to create."
 
-  type = list(string)
+  type    = list(string)
   default = ["bessie", "clarabelle", "penelope"]
 }
 
