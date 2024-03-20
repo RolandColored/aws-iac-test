@@ -28,6 +28,9 @@ resource "aws_s3_bucket_acl" "lambda_bucket" {
 }
 
 // route53
+/*
+FIXME not working because we do not own the example.com domain
+
 resource "aws_route53_zone" "primary_domain" {
   name = "example.com"
 }
@@ -56,9 +59,9 @@ resource "aws_apigatewayv2_domain_name" "teant_domain" {
     security_policy = "TLS_1_2"
   }
 }
+*/
 
-
-// lambda
+// lambda code
 data "archive_file" "lambda_server" {
   type = "zip"
 
@@ -75,89 +78,26 @@ resource "aws_s3_object" "lambda_server" {
   etag = filemd5(data.archive_file.lambda_server.output_path)
 }
 
-resource "aws_lambda_function" "server" {
-  function_name = "Server"
-
-  s3_bucket = aws_s3_bucket.lambda_bucket.id
-  s3_key    = aws_s3_object.lambda_server.key
-
-  runtime = "nodejs20.x"
-  handler = "hello.handler"
-
-  source_code_hash = data.archive_file.lambda_server.output_base64sha256
-
-  role = aws_iam_role.lambda_exec.arn
-}
-
-resource "aws_iam_role" "lambda_exec" {
-  name = "serverless_lambda"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Action = "sts:AssumeRole"
-      Effect = "Allow"
-      Sid    = ""
-      Principal = {
-        Service = "lambda.amazonaws.com"
-      }
-      }
-    ]
-  })
-}
-
 // api gateway
-resource "aws_apigatewayv2_api" "lambda" {
-  name          = "serverless_lambda_gw"
+resource "aws_apigatewayv2_api" "gateway" {
+  name          = "multitenant_gateway_stage"
   protocol_type = "HTTP"
 }
 
-resource "aws_apigatewayv2_stage" "lambda" {
-  api_id = aws_apigatewayv2_api.lambda.id
-
-  name        = "serverless_lambda_stage"
+resource "aws_apigatewayv2_stage" "gateway_stage" {
+  api_id = aws_apigatewayv2_api.gateway.id
+  name        = "multitenant_gateway_stage"
   auto_deploy = true
 }
 
-resource "aws_apigatewayv2_integration" "server" {
-  api_id = aws_apigatewayv2_api.lambda.id
+module "tenant" {
+  for_each = toset(var.tenants)
+  source = "./modules/tenant"
 
-  integration_uri    = aws_lambda_function.server.invoke_arn
-  integration_type   = "AWS_PROXY"
-  integration_method = "POST"
+  tenant_name           = each.key
+  bucket_id             = aws_s3_bucket.lambda_bucket.id
+  bucket_key            = aws_s3_object.lambda_server.key
+  source_code_hash      = aws_s3_object.lambda_server.etag
+  apigateway_id         = aws_apigatewayv2_api.gateway.id
+  apigateway_source_arn = aws_apigatewayv2_api.gateway.execution_arn
 }
-
-resource "aws_apigatewayv2_route" "server" {
-  api_id = aws_apigatewayv2_api.lambda.id
-
-  route_key = "GET /server"
-  target    = "integrations/${aws_apigatewayv2_integration.server.id}"
-}
-
-resource "aws_lambda_permission" "api_gw" {
-  statement_id  = "AllowExecutionFromAPIGateway"
-  action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.server.function_name
-  principal     = "apigateway.amazonaws.com"
-
-  source_arn = "${aws_apigatewayv2_api.lambda.execution_arn}/*/*"
-}
-
-// database
-resource "aws_db_instance" "database" {
-  allocated_storage           = 10
-  db_name                     = "tenantdatabase"
-  engine                      = "mysql"
-  engine_version              = "5.7"
-  instance_class              = "db.t3.micro"
-  username                    = "databaseowner"
-  manage_master_user_password = true
-  parameter_group_name        = "default.mysql5.7"
-  skip_final_snapshot         = true
-}
-
-/*
-resource "aws_db_proxy" "db_proxy" {
-  ...
-}
-*/
